@@ -4,6 +4,7 @@ import com.itm.space.backendresources.api.request.UserRequest;
 import com.itm.space.backendresources.api.response.UserResponse;
 import com.itm.space.backendresources.exception.BackendResourcesException;
 import com.itm.space.backendresources.mapper.UserMapper;
+import com.itm.space.backendresources.worker.IdentityWorker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -25,41 +26,35 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final Keycloak keycloakClient;
-    private final UserMapper userMapper;
 
-    @Value("${keycloak.realm}")
-    private String realm;
+    private final IdentityWorker identityWorker;
+    private final UserMapper userMapper;
 
     public void createUser(UserRequest userRequest) {
         CredentialRepresentation password = preparePasswordRepresentation(userRequest.getPassword());
         UserRepresentation user = prepareUserRepresentation(userRequest, password);
         try {
-            Response response = keycloakClient.realm(realm).users().create(user);
-            String userId = CreatedResponseUtil.getCreatedId(response);
+            String userId = identityWorker.createUser(user);
             log.info("Created UserId: {}", userId);
-        } catch (WebApplicationException ex) {
-            log.error("Exception on \"createUser\": ", ex);
+        } catch (WebApplicationException ex) { log.error("Exception on \"createUser\": ", ex);
             throw new BackendResourcesException(ex.getMessage(), HttpStatus.resolve(ex.getResponse().getStatus()));
         }
     }
 
     @Override
     public UserResponse getUserById(UUID id) {
-        UserRepresentation userRepresentation;
-        List<RoleRepresentation> userRoles;
-        List<GroupRepresentation> userGroups;
+        UserRepresentation userRepresentation = identityWorker.getUserById(id);
+        List<RoleRepresentation> userRoles = identityWorker.getUserRoles(id);
+        List<GroupRepresentation> userGroups = identityWorker.getUserGroups(id);
         try {
-            userRepresentation = keycloakClient.realm(realm).users().get(String.valueOf(id)).toRepresentation();
-            userRoles = keycloakClient.realm(realm)
-                    .users().get(String.valueOf(id)).roles().getAll().getRealmMappings();
-            userGroups = keycloakClient.realm(realm).users().get(String.valueOf(id)).groups();
+
         } catch (RuntimeException ex) {
             log.error("Exception on \"getUserById\": ", ex);
             throw new BackendResourcesException(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return userMapper.userRepresentationToUserResponse(userRepresentation, userRoles, userGroups);
     }
+
 
     private CredentialRepresentation preparePasswordRepresentation(String password) {
         CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
