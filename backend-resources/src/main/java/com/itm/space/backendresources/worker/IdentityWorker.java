@@ -1,6 +1,8 @@
 package com.itm.space.backendresources.worker;
 
+import com.itm.space.backendresources.api.response.UserResponse;
 import com.itm.space.backendresources.exception.BackendResourcesException;
+import com.itm.space.backendresources.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,43 +25,33 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IdentityWorker {
     private final Keycloak keycloakClient;
+
     @Value("${keycloak.realm}")
     private String realm;
 
-    public String createUser(UserRepresentation user) {
+    public String createUser(UserRepresentation userRepresentation) {
         try {
-            Response response = keycloakClient.realm(realm).users().create(user);
+            Response response = keycloakClient.realm(realm).users().create(userRepresentation);
             return CreatedResponseUtil.getCreatedId(response);
         } catch (WebApplicationException ex) {
-            log.error("Exception on \"createUser\": ", ex);
             throw new BackendResourcesException(ex.getMessage(), HttpStatus.resolve(ex.getResponse().getStatus()));
         }
     }
 
-    public UserRepresentation getUserById(UUID id) {
-        try {
-            return keycloakClient.realm(realm).users().get(String.valueOf(id)).toRepresentation();
-        } catch (RuntimeException ex) {
-            log.error("Exception on \"getUserById\": ", ex);
-            throw new BackendResourcesException(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public List<RoleRepresentation> getUserRoles(UUID id) {
-        try {
-            return keycloakClient.realm(realm).users().get(String.valueOf(id)).roles().getAll().getRealmMappings();
-        } catch (RuntimeException ex) {
-            log.error("Exception on \"getUserRoles\": ", ex);
-            throw new BackendResourcesException(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     public List<GroupRepresentation> getUserGroups(UUID id) {
-        try {
-            return keycloakClient.realm(realm).users().get(String.valueOf(id)).groups();
-        } catch (RuntimeException ex) {
-            log.error("Exception on \"getUserGroups\": ", ex);
-            throw new BackendResourcesException(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        List<GroupRepresentation> userGroups;
+        userGroups = keycloakClient.realm(realm).users().get(String.valueOf(id)).groups();
+        return userGroups;
+    }
+    public List<RoleRepresentation> getUserRoles(UUID id) {
+        List<RoleRepresentation> userRoles;
+        userRoles = keycloakClient.realm(realm).users().get(String.valueOf(id)).roles().getAll().getRealmMappings();
+        return userRoles;
+    }
+
+    public UserRepresentation getUserById(UUID id) {
+        UserRepresentation userRepresentation;
+        userRepresentation = keycloakClient.realm(realm).users().get(String.valueOf(id)).toRepresentation();
+        return userRepresentation;
     }
 }

@@ -43,10 +43,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getUserById(UUID id) {
-        UserRepresentation userRepresentation = identityWorker.getUserById(id);
-        List<RoleRepresentation> userRoles = identityWorker.getUserRoles(id);
-        List<GroupRepresentation> userGroups = identityWorker.getUserGroups(id);
+        UserRepresentation userRepresentation;
+        List<RoleRepresentation> userRoles;
+        List<GroupRepresentation> userGroups;
         try {
+            userRepresentation = identityWorker.getUserById(id);
+            userRoles  = identityWorker.getUserRoles(id);
+            userGroups = identityWorker.getUserGroups(id);
 
         } catch (RuntimeException ex) {
             log.error("Exception on \"getUserById\": ", ex);
