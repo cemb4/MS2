@@ -30,12 +30,10 @@ public class IdentityWorker {
     private String realm;
 
     public String createUser(UserRepresentation userRepresentation) {
-        try {
+
             Response response = keycloakClient.realm(realm).users().create(userRepresentation);
             return CreatedResponseUtil.getCreatedId(response);
-        } catch (WebApplicationException ex) {
-            throw new BackendResourcesException(ex.getMessage(), HttpStatus.resolve(ex.getResponse().getStatus()));
-        }
+
     }
 
     public List<GroupRepresentation> getUserGroups(UUID id) {
