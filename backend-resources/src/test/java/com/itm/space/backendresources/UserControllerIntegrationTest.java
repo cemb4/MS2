@@ -193,5 +193,4 @@ public class UserControllerIntegrationTest extends BaseIntegrationTest {
 //                .andExpect(status().is(404));
 //    }
 
-
 }
